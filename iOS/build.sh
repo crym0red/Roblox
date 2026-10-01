@@ -19,6 +19,7 @@ xcrun --sdk iphoneos clang \
   iOS/ExecutorKit/ExecutorOverlay.m \
   -framework Foundation \
   -framework UIKit \
+  -framework CoreGraphics \
   -o "$OUT/ExecutorKit.dylib" \
   -install_name @rpath/ExecutorKit.dylib
 
