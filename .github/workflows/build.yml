@@ -1,0 +1,36 @@
+name: Build iOS dylib
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+
+jobs:
+  build:
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: |
+          sudo xcode-select -s /Applications/Xcode.app
+          xcodebuild -version
+
+      - name: Build arm64 dylib
+        run: |
+          chmod +x iOS/build.sh
+          ./iOS/build.sh build
+
+      - name: Package artifact
+        run: |
+          cd build
+          zip -r ../ExecutorKit-ios-arm64.zip ExecutorKit.dylib ExecutorKit.framework
+
+      - name: Upload dylib artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ExecutorKit-ios-arm64
+          path: ExecutorKit-ios-arm64.zip
+          if-no-files-found: error
