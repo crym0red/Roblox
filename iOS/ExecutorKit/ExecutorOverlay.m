@@ -30,6 +30,7 @@ static UIColor *FEAccent(void)      { return FEColor(0.15, 0.82, 0.42, 1.0); }
 @property(nonatomic, strong) UIButton *executeButton;
 @property(nonatomic, strong) UIButton *clearButton;
 @property(nonatomic, strong) UILabel *statusLabel;
+@property(nonatomic, strong) UIView *launcher;
 @property(nonatomic, assign) BOOL visible;
 @property(nonatomic, assign) BOOL installed;
 @property(nonatomic, assign) CGFloat pinchStartWidth;
@@ -86,8 +87,129 @@ static UIColor *FEAccent(void)      { return FEColor(0.15, 0.82, 0.42, 1.0); }
     [host addGestureRecognizer:hold];
     self.gesture = hold;
 
+    [self buildLauncherInWindow:host];
     [self buildPanelInWindow:host];
     self.installed = YES;
+}
+
+- (void)buildLauncherInWindow:(UIWindow *)host {
+    UIView *launcher = [[UIView alloc] initWithFrame:CGRectZero];
+    launcher.translatesAutoresizingMaskIntoConstraints = NO;
+    launcher.backgroundColor = FEColor(0.035, 0.038, 0.045, 0.94);
+    launcher.layer.cornerRadius = 18.0;
+    launcher.layer.borderWidth = 1.0;
+    launcher.layer.borderColor = FEColor(1, 1, 1, 0.14).CGColor;
+    launcher.layer.shadowColor = UIColor.blackColor.CGColor;
+    launcher.layer.shadowOpacity = 0.30;
+    launcher.layer.shadowRadius = 14.0;
+    launcher.layer.shadowOffset = CGSizeMake(0, 5);
+    [host addSubview:launcher];
+    self.launcher = launcher;
+
+    // Header: TrustC0re + status.
+    UILabel *title = [[UILabel alloc] init];
+    title.translatesAutoresizingMaskIntoConstraints = NO;
+    title.text = @"TrustC0re";
+    title.textColor = UIColor.whiteColor;
+    title.font = [UIFont systemFontOfSize:17 weight:UIFontWeightSemibold];
+    [launcher addSubview:title];
+
+    UILabel *description = [[UILabel alloc] init];
+    description.translatesAutoresizingMaskIntoConstraints = NO;
+    description.text = @"Your local TrustC0re control center";
+    description.textColor = FEColor(0.66, 0.68, 0.73, 1.0);
+    description.font = [UIFont systemFontOfSize:10.5 weight:UIFontWeightRegular];
+    description.numberOfLines = 1;
+    [launcher addSubview:description];
+
+    UIView *statusDot = [[UIView alloc] init];
+    statusDot.translatesAutoresizingMaskIntoConstraints = NO;
+    statusDot.backgroundColor = FEAccent();
+    statusDot.layer.cornerRadius = 4.0;
+    [launcher addSubview:statusDot];
+
+    UILabel *status = [[UILabel alloc] init];
+    status.translatesAutoresizingMaskIntoConstraints = NO;
+    status.text = @"Ready";
+    status.textColor = FEAccent();
+    status.font = [UIFont systemFontOfSize:10 weight:UIFontWeightSemibold];
+    [launcher addSubview:status];
+
+    // Two-column launcher content. The left card opens the full menu.
+    UIButton *whitelist = [UIButton buttonWithType:UIButtonTypeSystem];
+    whitelist.translatesAutoresizingMaskIntoConstraints = NO;
+    whitelist.backgroundColor = FEColor(0.55, 0.05, 0.09, 0.92);
+    whitelist.layer.cornerRadius = 11.0;
+    whitelist.layer.borderWidth = 1.0;
+    whitelist.layer.borderColor = FEColor(1, 1, 1, 0.08).CGColor;
+    [whitelist setTitle:@"Whitelist\nOpen TrustC0re" forState:UIControlStateNormal];
+    [whitelist setTitleColor:UIColor.whiteColor forState:UIControlStateNormal];
+    whitelist.titleLabel.numberOfLines = 2;
+    whitelist.titleLabel.textAlignment = NSTextAlignmentCenter;
+    whitelist.titleLabel.font = [UIFont systemFontOfSize:11 weight:UIFontWeightSemibold];
+    whitelist.accessibilityLabel = @"Whitelist and open TrustC0re";
+    [whitelist addTarget:self action:@selector(toggle) forControlEvents:UIControlEventTouchUpInside];
+    [launcher addSubview:whitelist];
+
+    UIView *divider = [[UIView alloc] init];
+    divider.translatesAutoresizingMaskIntoConstraints = NO;
+    divider.backgroundColor = FEColor(1, 1, 1, 0.10);
+    [launcher addSubview:divider];
+
+    UILabel *streaks = [[UILabel alloc] init];
+    streaks.translatesAutoresizingMaskIntoConstraints = NO;
+    streaks.text = @"🔥 Streaks\n0 days";
+    streaks.textColor = UIColor.whiteColor;
+    streaks.font = [UIFont systemFontOfSize:10 weight:UIFontWeightSemibold];
+    streaks.numberOfLines = 2;
+    [launcher addSubview:streaks];
+
+    UILabel *premium = [[UILabel alloc] init];
+    premium.translatesAutoresizingMaskIntoConstraints = NO;
+    premium.text = @"✨ Premium\nLocal access";
+    premium.textColor = FEColor(0.88, 0.89, 0.93, 1.0);
+    premium.font = [UIFont systemFontOfSize:10 weight:UIFontWeightRegular];
+    premium.numberOfLines = 2;
+    [launcher addSubview:premium];
+
+    // Keep the launcher compact and anchored like an in-app overlay.
+    UILayoutGuide *safe = host.safeAreaLayoutGuide;
+    [NSLayoutConstraint activateConstraints:@[
+        [launcher.topAnchor constraintEqualToAnchor:safe.topAnchor constant:8],
+        [launcher.leadingAnchor constraintEqualToAnchor:safe.leadingAnchor constant:8],
+        [launcher.widthAnchor constraintEqualToConstant:272],
+        [launcher.heightAnchor constraintEqualToConstant:104],
+
+        [title.topAnchor constraintEqualToAnchor:launcher.topAnchor constant:10],
+        [title.leadingAnchor constraintEqualToAnchor:launcher.leadingAnchor constant:14],
+        [description.topAnchor constraintEqualToAnchor:title.bottomAnchor constant:2],
+        [description.leadingAnchor constraintEqualToAnchor:title.leadingAnchor],
+
+        [status.trailingAnchor constraintEqualToAnchor:launcher.trailingAnchor constant:-14],
+        [status.centerYAnchor constraintEqualToAnchor:title.centerYAnchor],
+        [statusDot.trailingAnchor constraintEqualToAnchor:status.leadingAnchor constant:-5],
+        [statusDot.centerYAnchor constraintEqualToAnchor:status.centerYAnchor],
+        [statusDot.widthAnchor constraintEqualToConstant:8],
+        [statusDot.heightAnchor constraintEqualToConstant:8],
+
+        [whitelist.leadingAnchor constraintEqualToAnchor:launcher.leadingAnchor constant:12],
+        [whitelist.topAnchor constraintEqualToAnchor:description.bottomAnchor constant:9],
+        [whitelist.bottomAnchor constraintEqualToAnchor:launcher.bottomAnchor constant:-10],
+        [whitelist.widthAnchor constraintEqualToConstant:112],
+
+        [divider.leadingAnchor constraintEqualToAnchor:whitelist.trailingAnchor constant:10],
+        [divider.topAnchor constraintEqualToAnchor:whitelist.topAnchor],
+        [divider.bottomAnchor constraintEqualToAnchor:whitelist.bottomAnchor],
+        [divider.widthAnchor constraintEqualToConstant:1],
+
+        [streaks.leadingAnchor constraintEqualToAnchor:divider.trailingAnchor constant:12],
+        [streaks.topAnchor constraintEqualToAnchor:whitelist.topAnchor constant:1],
+        [streaks.trailingAnchor constraintEqualToAnchor:launcher.trailingAnchor constant:-12],
+
+        [premium.leadingAnchor constraintEqualToAnchor:streaks.leadingAnchor],
+        [premium.topAnchor constraintEqualToAnchor:streaks.bottomAnchor constant:5],
+        [premium.trailingAnchor constraintEqualToAnchor:streaks.trailingAnchor]
+    ]];
 }
 
 - (void)buildPanelInWindow:(UIWindow *)host {
@@ -397,7 +519,8 @@ static UIColor *FEAccent(void)      { return FEColor(0.15, 0.82, 0.42, 1.0); }
 - (void)remove {
     if (self.gesture) [self.window removeGestureRecognizer:self.gesture];
     if (self.panel) [self.panel removeFromSuperview];
-    self.panel = nil; self.gesture = nil; self.pinch = nil;
+    if (self.launcher) [self.launcher removeFromSuperview];
+    self.panel = nil; self.launcher = nil; self.gesture = nil; self.pinch = nil;
     self.visible = NO; self.installed = NO;
 }
 
